@@ -1,0 +1,33 @@
+## Archivos de Visual Studio y compilación
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.log
+*.pdb
+
+## Archivos de Rider o VS Code
+.idea/
+.vscode/
+
+## Archivos de dependencia
+packages/
+*.nupkg
+
+## Configuración de usuario local
+*.dbmdl
+*.db
+*.bak
+
+## Archivos secretos o credenciales
+secrets.json
+
+## Configuración de Docker o containers
+Dockerfile
+docker-compose*
+
+## Otros archivos temporales
+*.DS_Store
+Thumbs.db
