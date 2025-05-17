@@ -16,25 +16,23 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Configurar cadena de conexi髇 a la base de datos
+// Configurar cadena de conexi贸n a la base de datos
 builder.Services.AddDbContext<AcademiaContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
-// Configuraci髇 del middleware
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Academia Tango API v1");
-    });
-}
+// Configuraci贸n del middleware
 
+// 馃敟 Activar Swagger SIEMPRE, incluso en producci贸n
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Academia Tango API v1");
+});
+
+// Seguridad y ejecuci贸n
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
-
-
