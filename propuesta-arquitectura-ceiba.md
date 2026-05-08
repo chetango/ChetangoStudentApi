@@ -50,58 +50,65 @@ flowchart TD
 Vista interna del sistema mostrando todos los bloques tecnológicos y sus relaciones.
 
 ```mermaid
-flowchart TD
-    U1[👮 Policía]
-    E1[📷 Dispositivos\nCámaras]
-    E2[🗄️ BDs Vehículos\nRobados por país]
-    E3[🔐 Sistemas de\nAutenticación por país]
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
+flowchart LR
+    E1["📷 Dispositivos\nCámaras"]
+    U1["👮 Policía"]
 
-    subgraph SISTEMA["Sistema de Detección de Vehículos Robados"]
-        FE[Aplicación Web\nBlazor WebAssembly]
-        GW[API Gateway\nYARP - .NET]
-        KEYCLOAK[Gestión de Identidades\nKeycloak]
-
-        MQTT[MQTT Broker\nMosquitto]
-        MQ[Cola de Mensajes\nRabbitMQ]
-
-        SVC_INGESTA[Servicio de Ingesta\nWorker Service .NET]
-        SVC_DETECCION[Servicio de Detección\nWorker Service .NET]
-        SVC_CONSULTA[Servicio de Consulta\nASP.NET Core Web API]
-        SVC_NOTIF[Servicio de Notificaciones\nWorker Service .NET + SignalR]
-        SVC_ANALYTICS[Servicio de Analytics\nASP.NET Core Web API]
-        ADAPTER[Adaptadores por País\nWorker Services .NET]
-
-        DB[(PostgreSQL\nBase de datos central)]
-        STORAGE[Almacenamiento de Fotos\nMinIO]
-        SUPERSET[Dashboards\nApache Superset]
+    subgraph MENSAJERIA["📨 Mensajería"]
+        direction TB
+        MQTT["MQTT Broker\nMosquitto"]
+        MQ["Cola de Mensajes\nRabbitMQ"]
     end
 
-    E1 -->|Eventos MQTT| MQTT
+    subgraph WORKERS["⚙️ Servicios Worker"]
+        direction TB
+        SVC_INGESTA["Servicio de Ingesta\nWorker Service .NET"]
+        SVC_DETECCION["Servicio de Detección\nWorker Service .NET"]
+        SVC_NOTIF["Servicio de Notificaciones\nWorker .NET + SignalR"]
+        ADAPTER["Adaptadores por País\nWorker Services .NET"]
+    end
+
+    subgraph APIS["🖥️ Frontend y APIs"]
+        direction TB
+        FE["Aplicación Web\nBlazor WebAssembly"]
+        GW["API Gateway\nYARP - .NET"]
+        KEYCLOAK["Gestión de Identidades\nKeycloak"]
+        SVC_CONSULTA["Servicio de Consulta\nASP.NET Core Web API"]
+        SVC_ANALYTICS["Servicio de Analytics\nASP.NET Core Web API"]
+    end
+
+    subgraph DATOS["🗃️ Almacenamiento"]
+        direction TB
+        DB[("PostgreSQL\nBase de datos central")]
+        STORAGE["Almacenamiento de Fotos\nMinIO"]
+        SUPERSET["Dashboards\nApache Superset"]
+    end
+
+    E2["🗄️ BDs Vehículos\nRobados por país"]
+    E3["🔐 Auth\npor país"]
+
+    E1 -->|"Eventos MQTT"| MQTT
     MQTT --> SVC_INGESTA
-    SVC_INGESTA -->|Publica evento| MQ
-    SVC_INGESTA -->|Guarda evento| DB
-    SVC_INGESTA -->|Guarda foto| STORAGE
-
-    MQ -->|Consume evento| SVC_DETECCION
-    SVC_DETECCION -->|Consulta placa| DB
-    SVC_DETECCION -->|Publica alerta| MQ
-
-    MQ -->|Consume alerta| SVC_NOTIF
-    SVC_NOTIF -->|Alerta en tiempo real| FE
-
-    ADAPTER -->|Sincroniza cada 15 min| E2
-    ADAPTER -->|Actualiza vehículos robados| DB
-
-    U1 -->|Usa| FE
-    FE -->|Login| KEYCLOAK
-    KEYCLOAK -->|Verifica identidad| E3
-    FE -->|Peticiones| GW
+    SVC_INGESTA -->|"Publica evento"| MQ
+    MQ -->|"Consume evento"| SVC_DETECCION
+    SVC_DETECCION -->|"Consulta placa"| DB
+    SVC_DETECCION -->|"Publica alerta"| MQ
+    MQ -->|"Consume alerta"| SVC_NOTIF
+    SVC_NOTIF -->|"Alerta tiempo real"| FE
+    SVC_INGESTA -->|"Guarda evento"| DB
+    SVC_INGESTA -->|"Guarda foto"| STORAGE
+    ADAPTER -->|"Actualiza robados"| DB
+    ADAPTER -->|"Sincroniza 15 min"| E2
+    U1 -->|"Usa"| FE
+    FE -->|"Login"| KEYCLOAK
+    KEYCLOAK -->|"Verifica identidad"| E3
+    FE -->|"Peticiones"| GW
     GW --> SVC_CONSULTA
     GW --> SVC_ANALYTICS
-
-    SVC_CONSULTA -->|Consulta eventos| DB
-    SVC_CONSULTA -->|Obtiene fotos| STORAGE
-    SVC_ANALYTICS -->|Consulta datos históricos| DB
+    SVC_CONSULTA -->|"Consulta eventos"| DB
+    SVC_CONSULTA -->|"Obtiene fotos"| STORAGE
+    SVC_ANALYTICS -->|"Consulta históricos"| DB
     SVC_ANALYTICS --> SUPERSET
 ```
 
@@ -141,31 +148,28 @@ flowchart TD
 Vista detallada de cómo el sistema se integra con los sistemas externos de cada país.
 
 ```mermaid
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
 flowchart LR
-    subgraph PAIS1["País 1 (ej. Colombia)"]
-        BD1[("BD Vehículos\nRobados\nOracle/MySQL/etc")]
-        AUTH1["Sistema de\nAutenticación\nLDAP / Active Directory"]
+    subgraph BDPAISES["📊 BDs de Vehículos Hurtados"]
+        BD1[("Colombia\nOracle / MySQL")]
+        BD2[("México\nREST API")]
+        BD3[("País N\nFormato nativo")]
     end
 
-    subgraph PAIS2["País 2 (ej. México)"]
-        BD2[("BD Vehículos\nRobados\nREST API")]
-        AUTH2["Sistema de\nAutenticación\nSOAP"]
-    end
-
-    subgraph PAIS3["País N..."]
-        BD3[("BD Vehículos\nRobados\nOtro formato")]
-        AUTH3["Sistema de\nAutenticación\nOtro mecanismo"]
-    end
-
-    subgraph SISTEMA["Sistema Central - Nube"]
-        ADP1["Adaptador\nColombia\nWorker .NET"]
-        ADP2["Adaptador\nMéxico\nWorker .NET"]
-        ADP3["Adaptador\nPaís N\nWorker .NET"]
-
+    subgraph SISTEMA["☁️ Sistema Central - Nube"]
+        direction TB
+        ADP1["Adaptador Colombia\nWorker .NET"]
+        ADP2["Adaptador México\nWorker .NET"]
+        ADP3["Adaptador País N\nWorker .NET"]
         DB[("PostgreSQL\nVehículos robados\nunificados")]
-
-        KEYCLOAK["Keycloak\nBroker de Identidades"]
         GW["API Gateway\nYARP"]
+        KEYCLOAK["Keycloak\nBroker de Identidades"]
+    end
+
+    subgraph AUTHPAISES["🔐 Autenticación por País"]
+        AUTH1["Colombia\nLDAP / Active Directory"]
+        AUTH2["México\nSOAP"]
+        AUTH3["País N\nOtro mecanismo"]
     end
 
     U1["👮 Policía"]
@@ -180,10 +184,10 @@ flowchart LR
 
     U1 -->|"Login"| GW
     GW -->|"Redirige autenticación"| KEYCLOAK
+    KEYCLOAK -->|"Token JWT"| GW
     KEYCLOAK -->|"LDAP query"| AUTH1
     KEYCLOAK -->|"SOAP request"| AUTH2
     KEYCLOAK -->|"Protocolo nativo"| AUTH3
-    KEYCLOAK -->|"Token JWT"| GW
 ```
 
 **Descripción:** La integración tiene dos dimensiones. Para los datos de vehículos hurtados, se implementa el patrón Adapter — un Worker Service en .NET por cada país que conoce el protocolo y formato de la fuente de datos de ese país, extrae la información y la normaliza al esquema estándar del sistema. Para la autenticación, Keycloak actúa como broker de identidades: el sistema solo habla con Keycloak, y Keycloak se encarga de hablar con el sistema de autenticación de cada país sin importar el protocolo que use.
