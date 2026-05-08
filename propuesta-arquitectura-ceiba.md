@@ -343,6 +343,55 @@ flowchart TD
 
 ---
 
+### 2.8 Diagrama de Observabilidad
+
+Vista de cómo se recolectan logs, métricas y trazas de todos los componentes del sistema, incluyendo el monitoreo de las Dead Letter Queues.
+
+```mermaid
+flowchart TD
+    subgraph SVCS["☁️ Microservicios y Mensajería - Kubernetes"]
+        SVC["Servicios .NET\nSerilog · OpenTelemetry · /health · /metrics"]
+        MQ["RabbitMQ\nColas principales + DLQs\nPlugin Prometheus activo"]
+    end
+
+    subgraph OBS["📊 Stack de Observabilidad - Kubernetes"]
+        subgraph METRICAS["Métricas y Alertas"]
+            PROM["Prometheus\nScraping cada 15s"]
+            GRAF["Grafana\nDashboards + Alertas"]
+        end
+
+        subgraph LOGS["Logs Centralizados"]
+            LOGSTASH["Logstash\nProcesamiento"]
+            ES["Elasticsearch\nAlmacenamiento"]
+            KIB["Kibana\nBúsqueda y análisis"]
+        end
+
+        subgraph TRAZAS["Trazas Distribuidas"]
+            OTEL["OpenTelemetry Collector"]
+        end
+    end
+
+    OPS["👨‍💻 Equipo de Operaciones"]
+
+    SVC -->|"Logs JSON\ncon TraceId via Serilog"| LOGSTASH
+    LOGSTASH --> ES
+    ES --> KIB
+
+    SVC -->|"Trazas distribuidas\nvía OTLP"| OTEL
+    OTEL -->|"Almacena trazas"| ES
+
+    SVC -->|"Métricas /metrics\nCPU · RAM · latencia · errores"| PROM
+    MQ -->|"Métricas /metrics\nlongitud colas + longitud DLQs"| PROM
+
+    PROM --> GRAF
+    GRAF -->|"Alerta: DLQ > 0\no tasa de error alta"| OPS
+    KIB -->|"Búsqueda de logs\npor TraceId o servicio"| OPS
+```
+
+**Descripción:** Cada microservicio .NET expone dos canales de observabilidad: logs estructurados en JSON via Serilog (que incluyen el `TraceId` del evento para correlacionar entre servicios) y métricas via un endpoint `/metrics` estándar de Prometheus. RabbitMQ expone sus propias métricas via el plugin oficial de Prometheus, incluyendo la longitud de cada cola — las DLQs incluidas. Grafana consume esas métricas y tiene configurada una alerta que se dispara cuando cualquier DLQ acumula mensajes, notificando al equipo de operaciones para inspección y reinyección. OpenTelemetry recolecta las trazas distribuidas y las almacena en Elasticsearch, donde Kibana permite seguir el recorrido completo de cualquier evento usando su `TraceId`.
+
+---
+
 ## 3. Componentes Principales
 
 ### 3.1 Worker Service del Dispositivo (.NET)
