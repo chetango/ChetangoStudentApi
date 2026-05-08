@@ -359,6 +359,8 @@ Servidor de mensajería ligero que recibe las conexiones de los dispositivos. Co
 
 Suscrito al MQTT Broker via MassTransit. Por cada evento recibido: persiste el evento en PostgreSQL, almacena la foto en MinIO y publica el evento en RabbitMQ para procesamiento asíncrono.
 
+**Idempotencia:** el patrón store-and-forward del dispositivo puede generar duplicados ante reconexiones GSM (el dispositivo reenvía eventos no confirmados). Para prevenirlos, cada evento incluye un `event_id` único (UUID generado en el dispositivo en el momento del registro). El Servicio de Ingesta realiza un `INSERT ... ON CONFLICT DO NOTHING` sobre ese campo en PostgreSQL — si el evento ya existe, la operación no hace nada y el servicio lo descarta silenciosamente sin propagar el duplicado a RabbitMQ.
+
 ### 3.4 Servicio de Detección (Worker Service .NET)
 
 Consume eventos de RabbitMQ via MassTransit. Busca la placa en la tabla unificada de vehículos hurtados en PostgreSQL. Si hay coincidencia, publica una alerta en RabbitMQ y actualiza el estado del evento. Implementa Circuit Breaker con **Polly** para protegerse ante fallas de PostgreSQL.
@@ -502,6 +504,14 @@ Herramienta de visualización de datos open source conectada a PostgreSQL. Prove
 
 **Justificación:** Mosquitto es suficiente para el volumen inicial (2.500 dispositivos) y es más simple de operar. EMQX está diseñado para escalar a millones de conexiones simultáneas. Al ser ambos compatible con el protocolo MQTT estándar, la migración es transparente para los dispositivos y los microservicios.
 
+### 4.13 Dead Letter Queue para mensajes no procesables
+
+**Decisión:** configurar una Dead Letter Queue (DLQ) en RabbitMQ para cada cola de procesamiento.
+
+**Justificación:** si un mensaje falla el procesamiento N veces consecutivas (por ejemplo, un evento con datos corruptos que el Servicio de Detección no puede deserializar), MassTransit lo mueve automáticamente a la DLQ correspondiente en lugar de bloquearlo indefinidamente en la cola principal. Los mensajes en la DLQ quedan disponibles para inspección manual, corrección y reinyección sin afectar el flujo normal del sistema. En un sistema de seguridad pública, un mensaje bloqueado no puede detener la detección de vehículos hurtados — la DLQ es el mecanismo que lo garantiza.
+
+**Configuración:** MassTransit gestiona la DLQ automáticamente al configurar la política de reintento (`UseMessageRetry`). El número de reintentos antes de mover a DLQ es configurable por cola (valor por defecto sugerido: 5 reintentos con backoff exponencial). Las DLQs son monitoreadas por Prometheus y Grafana — una alerta se dispara si hay mensajes acumulándose en una DLQ.
+
 ---
 
 ## 5. Consideraciones de Calidad
@@ -527,6 +537,9 @@ Todos los endpoints del API Gateway están protegidos con Token JWT emitido por 
 
 **Datos — Cifrado y mínimo privilegio:**
 Los datos en PostgreSQL y MinIO están cifrados en reposo. Cada microservicio tiene acceso únicamente a los recursos que necesita para su función (principio de mínimo privilegio) — el Servicio de Notificaciones, por ejemplo, no tiene acceso a la base de datos de vehículos hurtados.
+
+**Aislamiento de datos entre países (multitenancy):**
+Cada evento y cada registro de vehículo hurtado está marcado con el campo `pais_id`. El Token JWT emitido por Keycloak incluye el claim `country` con el país de la entidad policial del usuario. El Servicio de Consulta aplica un filtro obligatorio por `pais_id = claim.country` en todas las queries — un policía colombiano no puede ver eventos ni alertas de México. Este filtro se implementa a nivel de repositorio en cada microservicio, no en el frontend, garantizando que no sea bypasseable desde el cliente.
 
 ### 5.4 Resiliencia
 
