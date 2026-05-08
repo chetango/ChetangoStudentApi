@@ -280,12 +280,10 @@ sequenceDiagram
 Vista de la infraestructura y cómo viven los componentes en la nube.
 
 ```mermaid
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
 flowchart TD
+    CAM["📷 Cámaras - N dispositivos\nWorker Service .NET + SQLite"]
     POL["👮 Policía\nNavegador Web"]
-
-    subgraph FIELD["🏙️ Campo - Dispositivos en Calle"]
-        CAM["📷 Cámaras - N dispositivos\nWorker Service .NET + SQLite"]
-    end
 
     subgraph CLOUD["☁️ Kubernetes - Nube Cloud Agnostic"]
         subgraph AUTO["Flujo Automático - Detección"]
@@ -301,7 +299,6 @@ flowchart TD
             KK["Keycloak"]
             CON["Servicio Consulta\nWeb API .NET"]
             ANA["Servicio Analytics\nWeb API .NET"]
-            SUP["Apache Superset"]
         end
 
         subgraph INTEG["Integraciones"]
@@ -311,6 +308,7 @@ flowchart TD
         subgraph DATA["Datos Compartidos"]
             PG[("PostgreSQL")]
             MIN["MinIO\nObject Storage"]
+            SUP["Apache Superset"]
         end
     end
 
@@ -327,7 +325,7 @@ flowchart TD
     MQ --> DET
     MQ --> NOT
     DET --> PG
-    NOT --> GW
+    NOT -->|"Alerta SignalR"| POL
 
     POL -->|"HTTPS"| GW
     GW --> KK
