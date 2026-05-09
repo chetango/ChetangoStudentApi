@@ -654,3 +654,7 @@ Cada microservicio expone un endpoint `/health` que Kubernetes consulta para det
 11. **Retención de datos:** los eventos de avistamiento se retienen por 2 años en PostgreSQL. Datos más antiguos se archivan en MinIO en formato comprimido y se eliminan de la base de datos activa para mantener el rendimiento de las consultas a escala.
 
 12. **Gestión remota de dispositivos:** la instalación y actualización del Worker Service en los dispositivos se gestiona de forma remota mediante una herramienta de gestión de dispositivos IoT (Eclipse Hawkbit u equivalente), evitando intervención manual en cada cámara.
+
+---
+
+*Jorge Padilla — Ingeniero de Sistemas · Especialista en Desarrollo de Software*
