@@ -139,7 +139,7 @@ flowchart TD
     C -->|Marca evento como enviado| D
 ```
 
-**Descripción:** El Worker Service en .NET es el único software que se instala en cada dispositivo. Internamente tiene dos responsabilidades: el Recolector de Eventos consulta periódicamente el componente de hardware que ya reconoce las matrículas y persiste cada evento en SQLite (base de datos local en disco). El Sincronizador verifica constantemente la disponibilidad de la conexión GSM y, cuando la hay, envía los eventos pendientes al sistema central via MQTT, marcándolos como enviados en SQLite. Este patrón garantiza que ningún evento se pierda ante fallas de conectividad o energía.
+**Descripción:** El Worker Service en .NET es el único software que se instala en cada dispositivo. Internamente tiene dos responsabilidades: el Recolector de Eventos consulta periódicamente el componente de hardware que ya reconoce las matrículas y persiste cada evento en SQLite (base de datos local en disco). El Sincronizador verifica constantemente la disponibilidad de la conexión GSM y, cuando la hay, envía los eventos pendientes al sistema central via MQTT, marcándolos como enviados en SQLite. Este patrón garantiza que ningún evento capturado mientras el dispositivo esté encendido se pierda ante fallas de conectividad. Ante fallas de energía, se preservan todos los eventos registrados hasta el momento del apagado — la batería de respaldo de 1 hora maximiza la ventana de captura antes del apagado.
 
 ---
 
@@ -408,7 +408,7 @@ Servidor de mensajería ligero que recibe las conexiones de los dispositivos. Co
 
 ### 3.3 Servicio de Ingesta (Worker Service .NET)
 
-Suscrito al MQTT Broker via MassTransit. Por cada evento recibido: persiste el evento en PostgreSQL, almacena la foto en MinIO y publica el evento en RabbitMQ para procesamiento asíncrono.
+Recibe eventos del MQTT Broker mediante **MQTTnet** (suscripción directa al topic del broker). Por cada evento recibido: persiste el evento en PostgreSQL, almacena la foto en MinIO y publica el evento en RabbitMQ usando **MassTransit** para procesamiento asíncrono. El canal MQTT (dispositivo → broker) y el canal de mensajería interna (broker → microservicios) son deliberadamente independientes: MQTTnet maneja la capa IoT y MassTransit maneja la capa de microservicios.
 
 **Idempotencia:** el patrón store-and-forward del dispositivo puede generar duplicados ante reconexiones GSM (el dispositivo reenvía eventos no confirmados). Para prevenirlos, cada evento incluye un `event_id` único (UUID generado en el dispositivo en el momento del registro). El Servicio de Ingesta realiza un `INSERT ... ON CONFLICT DO NOTHING` sobre ese campo en PostgreSQL — si el evento ya existe, la operación no hace nada y el servicio lo descarta silenciosamente sin propagar el duplicado a RabbitMQ.
 
@@ -468,7 +468,7 @@ Herramienta de visualización de datos open source conectada a PostgreSQL. Prove
 
 **Decisión:** siempre persistir primero en SQLite y sincronizar después, nunca enviar directo al sistema central.
 
-**Justificación:** la conexión GSM puede interrumpirse en cualquier momento y la batería de respaldo solo dura 1 hora ante fallas de energía de hasta 4 horas. Sin persistencia local, cualquier evento durante esos periodos se perdería permanentemente. SQLite no requiere instalación adicional, se embebe en el ejecutable .NET y crea su archivo de datos automáticamente al primer arranque.
+**Justificación:** la conexión GSM puede interrumpirse en cualquier momento y la batería de respaldo dura 1 hora ante fallas de energía. Sin persistencia local, todos los eventos capturados durante esa hora antes del apagado se perderían permanentemente. El patrón store-and-forward garantiza que los eventos registrados mientras el dispositivo esté operativo no se pierdan — independientemente de cuándo vuelva la conectividad. Los eventos no capturables durante un apagado prolongado son una limitación de hardware conocida y asumida. SQLite no requiere instalación adicional, se embebe en el ejecutable .NET y crea su archivo de datos automáticamente al primer arranque.
 
 **Alternativa considerada:** enviar directo cuando hay conexión y descartar cuando no. Descartada porque compromete la integridad del dato, que es crítica en un sistema de seguridad pública.
 
