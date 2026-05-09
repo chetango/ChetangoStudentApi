@@ -39,31 +39,103 @@
     /* ─── Progress bar ─── */
     .reveal .progress { height: 3px; color: var(--blue); }
 
-    /* ─── Cover slide ─── */
-    .cover-title {
-      font-size: 2.8rem;
+    /* ─── Cover slide (Figma design system) ─── */
+    .cover2-wrap {
+      text-align: center;
+      padding: 0 2rem;
+      margin-top: -1.8rem;
+      position: relative;
+    }
+    .cover2-glow {
+      position: absolute;
+      top: 38%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 480px;
+      height: 220px;
+      background: radial-gradient(ellipse, rgba(201,52,72,0.13) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .cover2-wrap > * { position: relative; z-index: 1; }
+    .cover2-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      background: rgba(201,52,72,0.08);
+      border: 1px solid rgba(201,52,72,0.28);
+      border-radius: 8px;
+      padding: 4px 14px;
+      font-size: .68rem;
+      color: #c93448;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    .cover2-title {
+      font-size: 2.6rem;
       font-weight: 700;
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+      color: #f9fafb;
+      margin-bottom: .5rem;
+    }
+    .cover2-title span { color: #c93448; }
+    .cover2-divider {
+      width: 36px;
+      height: 2px;
+      background: #c93448;
+      margin: .65rem auto .85rem;
+      border-radius: 2px;
+    }
+    .cover2-sub {
+      font-size: .82rem;
+      color: #9ca3af;
+      line-height: 1.65;
+      max-width: 540px;
+      margin: 0 auto;
+    }
+    .cover2-glass {
+      background: rgba(26,26,32,0.45);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: .75rem 1.2rem;
+      display: inline-block;
+      margin-top: 1rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+    }
+    .cover2-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .35rem;
+      justify-content: center;
+    }
+    .cover2-chip {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 3px 11px;
+      font-size: .68rem;
+      color: #d1d5db;
+    }
+    .cover2-nav {
+      margin-top: 1.2rem;
+      font-size: .6rem;
+      color: rgba(255,255,255,0.18);
+    }
+    /* Legacy classes kept for other slides */
+    .cover-title {
+      font-size: 2.8rem; font-weight: 700;
       background: linear-gradient(135deg, var(--blue), var(--amber));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
       line-height: 1.2;
     }
-    .cover-sub {
-      font-size: 1.1rem;
-      color: var(--text);
-      opacity: .8;
-      margin-top: .6rem;
-    }
+    .cover-sub { font-size: 1.1rem; color: var(--text); opacity: .8; margin-top: .6rem; }
     .cover-badge {
-      display: inline-block;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: .25rem .7rem;
-      font-size: .8rem;
-      margin: .2rem;
-      color: var(--blue);
+      display: inline-block; background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 6px; padding: .25rem .7rem; font-size: .8rem; margin: .2rem; color: var(--blue);
     }
     .cover-badges { margin-top: 1.4rem; }
 
@@ -386,27 +458,28 @@
          SLIDE 1 — COVER
     ══════════════════════════════════════════ -->
     <section>
-      <div style="text-align:center; padding: 2rem 1rem;">
+      <div class="cover2-wrap">
+        <div class="cover2-glow"></div>
         <video src="videoCamaraIa.mp4" autoplay loop muted playsinline
-          style="height:130px; margin-bottom:1rem; display:block; margin-left:auto; margin-right:auto;
+          style="height:110px; margin-bottom:1rem; display:block; margin-left:auto; margin-right:auto;
                  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 15%, transparent 80%);
-                 mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 15%, transparent 80%);">
-        </video>
-        <div style="font-size:.8rem; color:var(--amber); letter-spacing:.15em; text-transform:uppercase; margin-bottom:.8rem;">
-          Propuesta de Arquitectura · Ceiba
+                 mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 15%, transparent 80%);"></video>
+        <div class="cover2-eyebrow">Propuesta de Arquitectura · Ceiba</div>
+        <div class="cover2-title">Sistema para Combatir<br/><span>el Hurto de Vehículos</span></div>
+        <div class="cover2-divider"></div>
+        <div class="cover2-sub">Plataforma distribuida, cloud-agnostic y de alta disponibilidad<br/>para detección en tiempo real de vehículos robados</div>
+        <div class="cover2-glass">
+          <div class="cover2-chips">
+            <span class="cover2-chip">.NET / C#</span>
+            <span class="cover2-chip">Kubernetes</span>
+            <span class="cover2-chip">MQTT · RabbitMQ</span>
+            <span class="cover2-chip">PostgreSQL · MinIO</span>
+            <span class="cover2-chip">OpenTelemetry · ELK</span>
+            <span class="cover2-chip">Cloud Agnostic</span>
+            <span class="cover2-chip">Open Source</span>
+          </div>
         </div>
-        <div class="cover-title">Sistema para Combatir<br/>el Hurto de Vehículos</div>
-        <div class="cover-sub">Plataforma distribuida, cloud-agnostic y de alta disponibilidad<br/>para detección en tiempo real de vehículos robados</div>
-        <div class="cover-badges">
-          <span class="cover-badge">.NET / C#</span>
-          <span class="cover-badge">Kubernetes</span>
-          <span class="cover-badge">MQTT · RabbitMQ</span>
-          <span class="cover-badge">PostgreSQL · MinIO</span>
-          <span class="cover-badge">OpenTelemetry · ELK</span>
-          <span class="cover-badge">Cloud Agnostic</span>
-          <span class="cover-badge">Open Source</span>
-        </div>
-        <div style="margin-top:2rem; font-size:.65rem; color:var(--border);">↓ / → para navegar · ESC para vista general</div>
+        <div class="cover2-nav">↓ / → para navegar · ESC para vista general</div>
       </div>
     </section>
 
